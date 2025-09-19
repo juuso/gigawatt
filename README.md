@@ -13,7 +13,7 @@ brew install juuso/tap/gigawatt
 ```
 
 ```sh
-npm install -g gigawatt
+npm install -g gigawatt-prompt
 ```
 
 ## How to set it as your shell prompt
