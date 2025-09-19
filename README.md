@@ -29,9 +29,3 @@ Gigawatt is a small opinionated prompt, and it brings me joy that it has no conf
 If you want to change something, please fork and modify the project for your own needs!
 
 GitHub pull requests will most likely be left on read.
-
-# Sponsors
-
-<img src="https://radiosilenceapp.com/gigawatt/collab.png" srcset="https://radiosilenceapp.com/gigawatt/collab@2x.png 2x"/>
-
-Gigawatt is a Dromedaari & [Radio Silence](https://radiosilenceapp.com) collab project.
