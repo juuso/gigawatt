@@ -32,6 +32,6 @@ GitHub pull requests will most likely be left on read.
 
 # Sponsors
 
-<img src="https://radiosilenceapp.com/gigawatt/collab.png" srcset="https://radiosilenceapp.com/gigawatt/collab@2x.png 2x"/>
+<img src="https://radiosilenceapp.com/gigawatt/collab@2x.png" width="87" />
 
 Gigawatt is a Dromedaari & [Radio Silence](https://radiosilenceapp.com) collab project.
