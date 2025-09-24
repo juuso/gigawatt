@@ -4,6 +4,8 @@ An opinionated zero-configuration shell prompt that automatically adapts to your
 
 ### [🌍 Gigawatt's website & full docs](https://radiosilenceapp.com/gigawatt/)
 
+<img src="https://github.com/user-attachments/assets/6b2f82ae-8a94-4b97-b2a5-8cd1743397eb" width="400"/>
+
 # Quickstart
 
 ## How to get it
