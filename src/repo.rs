@@ -1,61 +1,63 @@
-use git2::{ErrorCode, ObjectType, Reference, Repository, RepositoryState, StatusOptions};
+use gix::head::Kind;
+use gix::progress::Discard;
+use gix::state::InProgress;
+use gix::status::{Submodule, UntrackedFiles};
+use gix::{Repository, discover};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 
 use crate::utils::current_path;
 
 pub fn repo_state(repo: &Repository) -> Option<&str> {
-    match repo.state() {
-        RepositoryState::Clean => None,
-        RepositoryState::ApplyMailbox | RepositoryState::ApplyMailboxOrRebase => Some("Applying"),
-        RepositoryState::Bisect => Some("Bisecting"),
-        RepositoryState::CherryPick | RepositoryState::CherryPickSequence => Some("🍒"),
-        RepositoryState::Merge => Some("Merging"),
-        RepositoryState::Rebase
-        | RepositoryState::RebaseInteractive
-        | RepositoryState::RebaseMerge => Some("Rebasing"),
-        RepositoryState::Revert | RepositoryState::RevertSequence => Some("Reverting"),
+    match repo.state()? {
+        InProgress::ApplyMailbox | InProgress::ApplyMailboxRebase => Some("Applying"),
+        InProgress::Bisect => Some("Bisecting"),
+        InProgress::CherryPick | InProgress::CherryPickSequence => Some("🍒"),
+        InProgress::Merge => Some("Merging"),
+        InProgress::Rebase | InProgress::RebaseInteractive => Some("Rebasing"),
+        InProgress::Revert | InProgress::RevertSequence => Some("Reverting"),
     }
 }
 
 pub fn is_repo_dirty(repo: &Repository) -> bool {
-    let mut opts = StatusOptions::new();
-    opts.include_untracked(true).include_ignored(false);
-    match repo.statuses(Some(&mut opts)) {
-        Ok(statuses) => !statuses.is_empty(),
-        Err(_) => false,
+    check_dirty(repo).unwrap_or(false)
+}
+
+fn check_dirty(repo: &Repository) -> Option<bool> {
+    let had_enough = Arc::new(AtomicBool::new(false));
+
+    let platform = repo
+        .status(Discard)
+        .ok()?
+        .untracked_files(UntrackedFiles::Collapsed)
+        .index_worktree_submodules(Submodule::AsConfigured { check_dirty: true })
+        .should_interrupt_owned(had_enough.clone());
+
+    let mut it = platform.into_iter(std::iter::empty()).ok()?;
+    let dirty = it.next().is_some();
+    if dirty {
+        had_enough.store(true, Ordering::Relaxed);
     }
+
+    Some(dirty)
 }
 
 pub fn repo_head_description(repo: &Repository) -> Option<String> {
-    match repo.head() {
-        Ok(r) => {
-            if r.is_branch() {
-                Some(r.shorthand()?.to_string())
-            } else {
-                commit_description(&r)
-            }
+    let head = repo.head().ok()?;
+    match head.kind {
+        Kind::Symbolic(r) => Some(r.name.shorten().to_string()),
+        Kind::Detached { target, peeled } => {
+            Some(peeled.unwrap_or(target).to_hex_with_len(7).to_string())
         }
-        Err(e) if e.code() == ErrorCode::UnbornBranch => repo_unborn_head_description(repo),
-        _ => None,
-    }
-}
-
-fn commit_description(r: &Reference) -> Option<String> {
-    let obj = r.peel(ObjectType::Commit).ok()?;
-    Some(obj.short_id().ok()?.as_str()?.to_string())
-}
-
-fn repo_unborn_head_description(repo: &Repository) -> Option<String> {
-    match repo.find_reference("HEAD") {
-        Ok(r) => {
-            let target = r.symbolic_target()?;
-            let commit = target.strip_prefix("refs/heads/")?;
-            Some(commit.to_string())
-        }
-        Err(_) => None,
+        Kind::Unborn(u) => Some(u.shorten().to_string()),
     }
 }
 
 pub fn current_repo() -> Option<Repository> {
     let cwd = current_path()?;
-    Repository::discover(&cwd).ok()
+    let (p, _) = discover::upwards(&cwd).ok()?;
+    let (_, workdir) = p.into_repository_and_work_tree_directories();
+    gix::open(workdir?).ok()
 }

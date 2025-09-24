@@ -9,10 +9,12 @@ version = "0.1.1"
 edition = "2024"
 
 [dependencies]
-git2 = { version = "0.20.2", default-features = false, features = [
-    "vendored-libgit2",
-] }
 nix = { version = "0.30", features = ["term"] }
+gix = { version = "0.73", default-features = false, features = [
+    "status",
+    "parallel",
+    "max-control",
+] }
 
 [dev-dependencies]
 tempfile = "3.22.0"
